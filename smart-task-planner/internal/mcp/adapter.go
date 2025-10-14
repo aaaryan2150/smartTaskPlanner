@@ -9,38 +9,38 @@ import (
 	"os"
 )
 
-type GeminiResponse struct {
-	Candidates []struct {
-		Content struct {
-			Parts []struct {
-				Text string `json:"text"`
-			} `json:"parts"`
-		} `json:"content"`
-	} `json:"candidates"`
+// OpenAIResponse represents the structure of OpenAI's API response
+type OpenAIResponse struct {
+	Choices []struct {
+		Message struct {
+			Content string `json:"content"`
+		} `json:"message"`
+	} `json:"choices"`
 }
 
-// CallGeminiAPI calls Gemini API with the prompt and returns the response text
-func CallGeminiAPI(prompt string) (string, error) {
-	apiKey := os.Getenv("GEMINI_API_KEY")
+// CallOpenAIAPI calls OpenAI’s Chat Completions API with a given prompt
+func CallOpenAIAPI(prompt string) (string, error) {
+	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
-		return "", fmt.Errorf("GEMINI_API_KEY environment variable not set")
+		return "", fmt.Errorf("OPENAI_API_KEY environment variable not set")
 	}
 
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s", apiKey)
+	url := "https://api.openai.com/v1/chat/completions"
 
 	payload := map[string]interface{}{
-		"contents": []map[string]interface{}{
-			{
-				"parts": []map[string]string{
-					{"text": prompt},
-				},
-			},
+		"model": "gpt-4.1-mini", // you can change to gpt-4.1 or gpt-4o
+		"messages": []map[string]string{
+			{"role": "system", "content": "You are an expert AI task planner."},
+			{"role": "user", "content": prompt},
 		},
+		"temperature": 0.7,
 	}
 
 	jsonData, _ := json.Marshal(payload)
+
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -51,14 +51,18 @@ func CallGeminiAPI(prompt string) (string, error) {
 
 	body, _ := ioutil.ReadAll(resp.Body)
 
-	var geminiResp GeminiResponse
-	if err := json.Unmarshal(body, &geminiResp); err != nil {
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("OpenAI API error: %s", string(body))
+	}
+
+	var openAIResp OpenAIResponse
+	if err := json.Unmarshal(body, &openAIResp); err != nil {
 		return "", err
 	}
 
-	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
-		return "", fmt.Errorf("no response from Gemini")
+	if len(openAIResp.Choices) == 0 {
+		return "", fmt.Errorf("no response from OpenAI")
 	}
 
-	return geminiResp.Candidates[0].Content.Parts[0].Text, nil
+	return openAIResp.Choices[0].Message.Content, nil
 }

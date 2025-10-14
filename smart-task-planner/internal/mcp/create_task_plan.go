@@ -1,90 +1,121 @@
 package mcp
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strings"
 	"time"
 	"smart-task-planner/internal/modules/plan/models"
 )
 
-// CreateTaskPlan calls the MCP/Gemini API with a structured prompt and returns the Plan
-func CreateTaskPlan(params map[string]interface{}) (models.Plan, error) {
-	goal := params["goal"].(string)
+// type OpenAIResponse struct {
+// 	Choices []struct {
+// 		Message struct {
+// 			Content string `json:"content"`
+// 		} `json:"message"`
+// 	} `json:"choices"`
+// }
 
-	// Optional: user can pass a deadline, else default to 2 weeks from today
-	var deadline string
-	if d, ok := params["deadline"].(string); ok && d != "" {
-		deadline = d
-	} else {
-		deadline = time.Now().AddDate(0, 0, 14).Format("2006-01-02") // 2 weeks from today
+// Temp struct for parsing OpenAI JSON (deadline as string)
+type AITask struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	DeadlineStr string `json:"deadline"`
+}
+
+type TaskPlan struct {
+	Tasks []models.Task
+}
+
+func CreateTaskPlan(params map[string]interface{}) (TaskPlan, error) {
+	goal, ok := params["goal"].(string)
+	if !ok || goal == "" {
+		return TaskPlan{}, fmt.Errorf("goal required")
 	}
 
-	today := time.Now().Format("2006-01-02")
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		return TaskPlan{}, fmt.Errorf("OPENAI_API_KEY not set")
+	}
 
-	// Construct the detailed task planning prompt
-	prompt := fmt.Sprintf(`You are an expert task planner. Today's date is %s.
-
-Break down the following goal into a detailed, actionable task plan:
-
-GOAL: "%s"
-FINAL DEADLINE: %s
-
-REQUIREMENTS:
-1. Create SPECIFIC, ACTIONABLE tasks (not vague descriptions)
-2. Number of tasks should be proportional to the time available until the deadline
-3. Each task must be completable within 1-3 days
-4. Include concrete deliverables for each task
-5. Assign realistic deadlines to each task, distributed between today and the final deadline
-6. Tasks should follow a logical sequence
-7. Break down complex activities into smaller, measurable steps
-
-OUTPUT FORMAT (respond with ONLY valid JSON, no markdown or additional text):
+	prompt := fmt.Sprintf(`You are an expert AI task planner.
+Generate at least 10 actionable, detailed tasks for this goal:
+"%s"
+Each task must have:
+- title
+- description
+- deadline (YYYY-MM-DD, evenly distributed across goal duration)
+Return ONLY valid JSON:
 [
-  {
-    "id": "task-1",
-    "name": "Specific task description with clear deliverable",
-    "deadline": "YYYY-MM-DD"
-  }
-]
+  {"title": "...", "description": "...", "deadline": "..."}
+]`, goal)
 
-EXAMPLE:
-If goal is "Launch a blog" with 10 days deadline:
-- Don't say: "Set up website" (too vague)
-- Do say: "Register domain name and set up hosting on Vercel/Netlify" (specific)
-- Don't say: "Create content" (too vague)
-- Do say: "Write and edit 5 blog posts (500-800 words each) on chosen topics" (specific)
+	url := "https://api.openai.com/v1/chat/completions"
+	payload := map[string]interface{}{
+		"model": "gpt-4.1-mini",
+		"messages": []map[string]string{
+			{"role": "system", "content": "You are an expert AI task planner."},
+			{"role": "user", "content": prompt},
+		},
+		"temperature": 0.7,
+	}
 
-Generate the task breakdown now:`, today, goal, deadline)
+	data, _ := json.Marshal(payload)
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
+	req.Header.Set("Content-Type", "application/json")
 
-	// Call the Gemini API
-	aiResponse, err := CallGeminiAPI(prompt)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
-		return models.Plan{}, err
+		return TaskPlan{}, err
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return TaskPlan{}, fmt.Errorf("OpenAI error: %s", string(body))
 	}
 
-	// Parse the JSON response into tasks
+	var openAIResp OpenAIResponse
+	if err := json.Unmarshal(body, &openAIResp); err != nil {
+		return TaskPlan{}, err
+	}
+
+	if len(openAIResp.Choices) == 0 {
+		return TaskPlan{}, fmt.Errorf("no response from OpenAI")
+	}
+
+	raw := strings.TrimSpace(openAIResp.Choices[0].Message.Content)
+	// Clean markdown
+	raw = strings.TrimPrefix(raw, "```json")
+	raw = strings.TrimSuffix(raw, "```")
+	raw = strings.TrimSpace(raw)
+
+	var aiTasks []AITask
+	if err := json.Unmarshal([]byte(raw), &aiTasks); err != nil {
+		return TaskPlan{}, fmt.Errorf("failed to parse AI JSON: %v\nRaw: %s", err, raw)
+	}
+
+	// Convert to models.Task
 	var tasks []models.Task
-	if err := json.Unmarshal([]byte(aiResponse), &tasks); err != nil {
-		// Try to extract JSON if extra text is present
-		start, end := 0, len(aiResponse)
-		for i, c := range aiResponse {
-			if c == '[' {
-				start = i
-				break
-			}
+	now := time.Now()
+	for i, t := range aiTasks {
+		deadline, err := time.Parse("2006-01-02", t.DeadlineStr)
+		if err != nil {
+			deadline = now.Add(time.Duration(i+1) * 24 * time.Hour)
 		}
-		for i := len(aiResponse) - 1; i >= 0; i-- {
-			if aiResponse[i] == ']' {
-				end = i + 1
-				break
-			}
-		}
-		cleanJSON := aiResponse[start:end]
-		_ = json.Unmarshal([]byte(cleanJSON), &tasks)
+		tasks = append(tasks, models.Task{
+			Title:       t.Title,
+			Description: t.Description,
+			Status:      "Pending",
+			Deadline:    deadline,
+		})
 	}
 
-	return models.Plan{
-		Goal:  goal,
-		Tasks: tasks,
-	}, nil
+	return TaskPlan{Tasks: tasks}, nil
 }
