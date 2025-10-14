@@ -74,3 +74,86 @@ func (h *PlanHandler) GetPlans(c *gin.Context) {
 
 	c.JSON(http.StatusOK, plans)
 }
+
+func (h *PlanHandler) RefineTask(c *gin.Context) {
+	var req struct {
+		TaskID string `json:"task_id" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	task, err := h.service.GetTaskDetails(req.TaskID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	subtasks, err := h.service.RefineTask(*task)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"subtasks": subtasks})
+}
+
+func (h *PlanHandler) UpdateTaskStatus(c *gin.Context) {
+	var req struct {
+		TaskID string `json:"task_id" binding:"required"`
+		Status string `json:"status" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	task, err := h.service.UpdateTaskStatus(req.TaskID, req.Status)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, task)
+}
+
+func (h *PlanHandler) GetTaskDetails(c *gin.Context) {
+	taskID := c.Query("task_id")
+	if taskID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "task_id query param required"})
+		return
+	}
+
+	task, err := h.service.GetTaskDetails(taskID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, task)
+}
+
+func (h *PlanHandler) AddSubTasks(c *gin.Context) {
+	var req struct {
+		PlanID   string         `json:"plan_id" binding:"required"`
+		TaskID   string         `json:"task_id" binding:"required"`
+		SubTasks []models.Task  `json:"sub_tasks" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	updatedPlan, err := h.service.AddSubTasks(req.PlanID, req.TaskID, req.SubTasks)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, updatedPlan)
+}
+

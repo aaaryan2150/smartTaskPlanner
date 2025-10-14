@@ -11,11 +11,13 @@ type Task struct {
 	Description string             `bson:"description" json:"description"`
 	Status      string             `bson:"status" json:"status"`
 	Deadline    time.Time          `bson:"deadline" json:"deadline"`
+
+	SubTasks []Task `bson:"sub_tasks,omitempty" json:"sub_tasks,omitempty"` // ✅ new field
 }
 
 type Plan struct {
 	ID     primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	UserID string             `bson:"user_id" json:"user_id"` // link to user
+	UserID string             `bson:"user_id" json:"user_id"`
 	Goal   string             `bson:"goal" json:"goal"`
 	Tasks  []Task             `bson:"tasks" json:"tasks"`
 }

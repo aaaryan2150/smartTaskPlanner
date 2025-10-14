@@ -19,5 +19,12 @@ func RegisterPlanRoutes(router *gin.Engine, handler *handlers.PlanHandler) {
 
 		// Get all plans for current user
 		api.GET("/", handler.GetPlans)
+
+		api.POST("/refine-task", handler.RefineTask)
+		api.POST("/update-task-status", handler.UpdateTaskStatus)
+		api.GET("/task-details", handler.GetTaskDetails)
+
+		api.POST("/add-subtasks", handler.AddSubTasks)
+
 	}
 }
