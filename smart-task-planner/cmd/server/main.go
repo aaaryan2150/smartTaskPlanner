@@ -8,26 +8,33 @@ import (
 	"syscall"
 
 	"github.com/gin-gonic/gin"
-	"smart-task-planner/config"           // ← Check this
-	"smart-task-planner/internal/database" // ← Check this
+	"smart-task-planner/config"
+	"smart-task-planner/internal/database"
 	authRoutes "smart-task-planner/internal/modules/auth/routes"
-	"smart-task-planner/internal/modules/auth/service"
-	
+	authService "smart-task-planner/internal/modules/auth/service"
+	planHandlers "smart-task-planner/internal/modules/plan/handlers"
+	planRoutes "smart-task-planner/internal/modules/plan/routes"
+	planRepository "smart-task-planner/internal/modules/plan/repository"
+	planService "smart-task-planner/internal/modules/plan/service"
 )
 
 func main() {
+	// Load configuration
 	config.Load()
 
-	service.InitGoogleOAuth()
+	// Initialize Google OAuth
+	authService.InitGoogleOAuth()
 
-
+	// Connect to MongoDB
 	if err := database.Connect(); err != nil {
 		log.Fatal("❌ Database connection failed:", err)
 	}
 	defer database.Disconnect()
 
+	// Create Gin router
 	router := gin.Default()
 
+	// Health & root endpoints
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":   "healthy",
@@ -43,9 +50,20 @@ func main() {
 		})
 	})
 
+	// Auth routes
 	authRoutes.RegisterAuthRoutes(router)
 	authRoutes.RegisterOAuthRoutes(router)
 
+	// -------------------------------
+	// Plan module (Phase 1) setup
+	// -------------------------------
+	db := database.DB                                  // *mongo.Database instance
+	planRepo := planRepository.NewPlanRepository(db)  // repository constructor
+	planSvc := planService.NewPlanService(planRepo)   // service constructor
+	planHandler := planHandlers.NewPlanHandler(planSvc) // handler constructor
+	planRoutes.RegisterPlanRoutes(router, planHandler) // register plan routes
+
+	// Start server in a goroutine
 	log.Println("🚀 Starting server...")
 	log.Printf("🌐 Server running on http://localhost:%s", config.AppConfig.Port)
 	log.Printf("📝 Health check: http://localhost:%s/health", config.AppConfig.Port)
@@ -56,6 +74,7 @@ func main() {
 		}
 	}()
 
+	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
