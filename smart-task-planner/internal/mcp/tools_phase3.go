@@ -20,7 +20,6 @@ type RiskTask struct {
 	DaysLeft int    `json:"days_left"`
 }
 
-// 1️⃣ interpret_user_message
 func interpret_user_message(params map[string]interface{}) (map[string]interface{}, error) {
 	message := params["message"].(string)
 	userID := params["user_id"].(string)
@@ -70,7 +69,6 @@ func interpret_user_message(params map[string]interface{}) (map[string]interface
 	}
 }
 
-// 2️⃣ reschedule_plan (AI-powered)
 func reschedule_plan(params map[string]interface{}, repo *repository.PlanRepository) (map[string]interface{}, error) {
 	userID, ok := params["user_id"].(string)
 	if !ok || userID == "" {
@@ -110,7 +108,6 @@ func reschedule_plan(params map[string]interface{}, repo *repository.PlanReposit
 	}, nil
 }
 
-// 3️⃣ analyze_risks
 func analyze_risks(params map[string]interface{}, repo *repository.PlanRepository) (map[string]interface{}, error) {
 	userID, ok := params["user_id"].(string)
 	if !ok || userID == "" {
@@ -168,7 +165,6 @@ func analyze_risks(params map[string]interface{}, repo *repository.PlanRepositor
 	}, nil
 }
 
-// Recursive check for sub-tasks
 func checkSubTasks(goal string, tasks []models.Task, risks *[]RiskTask, now time.Time, threshold int) {
 	for _, t := range tasks {
 		if !t.Deadline.IsZero() {
@@ -186,7 +182,6 @@ func checkSubTasks(goal string, tasks []models.Task, risks *[]RiskTask, now time
 	}
 }
 
-// 4️⃣ get_user_progress
 func get_user_progress(params map[string]interface{}, repo *repository.PlanRepository) (map[string]interface{}, error) {
 	userID, ok := params["user_id"].(string)
 	if !ok || userID == "" {
@@ -242,7 +237,6 @@ func get_user_progress(params map[string]interface{}, repo *repository.PlanRepos
 	}, nil
 }
 
-// 5️⃣ provide_feedback
 func provide_feedback(params map[string]interface{}) (map[string]interface{}, error) {
 	progressDataRaw, ok := params["progress_data"]
 	if !ok || progressDataRaw == nil {
@@ -322,12 +316,10 @@ func provide_feedback(params map[string]interface{}) (map[string]interface{}, er
 	}, nil
 }
 
-// contains checks if a substring exists in a string (case-insensitive)
 func contains(s, substr string) bool {
 	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
-// extractDelayDays extracts the number of days mentioned in a sentence
 func extractDelayDays(message string) int {
 	re := regexp.MustCompile(`(\d+)\s*day`)
 	match := re.FindStringSubmatch(strings.ToLower(message))
@@ -338,7 +330,6 @@ func extractDelayDays(message string) int {
 	return 0
 }
 
-// 6️⃣ generate_alternative_plans
 func generate_alternative_plans(params map[string]interface{}) (map[string]interface{}, error) {
 	goalID, ok := params["goal_id"].(string)
 	if !ok || goalID == "" {
@@ -357,7 +348,6 @@ func generate_alternative_plans(params map[string]interface{}) (map[string]inter
 	}, nil
 }
 
-// 7️⃣ handle_general_query - AI-powered fallback for unrecognized queries
 func handle_general_query(params map[string]interface{}, repo *repository.PlanRepository) (map[string]interface{}, error) {
 	userID, ok := params["user_id"].(string)
 	if !ok || userID == "" {
@@ -369,7 +359,6 @@ func handle_general_query(params map[string]interface{}, repo *repository.PlanRe
 		return nil, fmt.Errorf("message required")
 	}
 
-	// Fetch user's plans for context
 	plans, err := repo.GetAllByUser(userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch user plans: %v", err)
@@ -381,7 +370,6 @@ func handle_general_query(params map[string]interface{}, repo *repository.PlanRe
 		}, nil
 	}
 
-	// Build context from user's plans
 	var contextBuilder strings.Builder
 	contextBuilder.WriteString("User's current plans:\n")
 	

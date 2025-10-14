@@ -11,7 +11,6 @@ import (
 	"smart-task-planner/internal/modules/plan/repository"
 )
 
-// Temp struct for parsing AI JSON
 type AITask struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`

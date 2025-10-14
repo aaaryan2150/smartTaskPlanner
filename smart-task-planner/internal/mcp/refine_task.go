@@ -1,4 +1,3 @@
-// mcp/refine_task.go
 package mcp
 
 import (
@@ -9,7 +8,6 @@ import (
 	"encoding/json"
 )
 
-// RefineTask generates subtasks for a given task
 func RefineTask(task models.Task) ([]models.Task, error) {
 	if task.Title == "" {
 		return nil, fmt.Errorf("task title required")
@@ -28,10 +26,8 @@ Return ONLY valid JSON:
 		return nil, err
 	}
 
-	// Clean markdown
 	resp = TrimCodeBlock(resp)
 
-	// Parse JSON
 	var aiTasks []AITask
 	if err := json.Unmarshal([]byte(resp), &aiTasks); err != nil {
 		return nil, fmt.Errorf("failed to parse AI JSON: %v\nRaw: %s", err, resp)
@@ -55,7 +51,6 @@ Return ONLY valid JSON:
 	return tasks, nil
 }
 
-// Helper to trim ```json blocks
 func TrimCodeBlock(s string) string {
 	s = strings.TrimPrefix(s, "```json")
 	s = strings.TrimSuffix(s, "```")

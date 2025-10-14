@@ -25,7 +25,6 @@ func UpdateTaskStatus(taskID string, status string, repo *repository.PlanReposit
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Update the task status
 	filter := bson.M{"tasks._id": objID}
 	update := bson.M{"$set": bson.M{"tasks.$.status": status}}
 
@@ -34,7 +33,6 @@ func UpdateTaskStatus(taskID string, status string, repo *repository.PlanReposit
 		return nil, res.Err()
 	}
 
-	// Fetch updated task
 	var plan models.Plan
 	if err := repo.Collection.FindOne(ctx, filter).Decode(&plan); err != nil {
 		return nil, err

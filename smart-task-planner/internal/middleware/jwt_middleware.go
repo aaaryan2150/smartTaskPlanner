@@ -11,7 +11,6 @@ import (
 
 var JwtSecret = []byte(os.Getenv("JWT_SECRET"))
 
-// JWTAuth protects routes
 func JWTAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")

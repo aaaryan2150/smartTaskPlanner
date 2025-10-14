@@ -1,4 +1,3 @@
-// mcp/get_task_details.go
 package mcp
 
 import (
@@ -25,7 +24,6 @@ func GetTaskDetails(taskID string, repo *repository.PlanRepository) (*models.Tas
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Search for the plan containing this task
 	var plan models.Plan
 	err = repo.Collection.FindOne(ctx, bson.M{"tasks._id": objID}).Decode(&plan)
 	if err != nil {

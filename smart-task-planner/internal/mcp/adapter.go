@@ -9,7 +9,6 @@ import (
 	"os"
 )
 
-// OpenAIResponse represents the structure of OpenAI's API response
 type OpenAIResponse struct {
 	Choices []struct {
 		Message struct {
@@ -18,7 +17,6 @@ type OpenAIResponse struct {
 	} `json:"choices"`
 }
 
-// CallOpenAIAPI calls OpenAI’s Chat Completions API with a given prompt
 func CallOpenAIAPI(prompt string) (string, error) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
@@ -28,7 +26,7 @@ func CallOpenAIAPI(prompt string) (string, error) {
 	url := "https://api.openai.com/v1/chat/completions"
 
 	payload := map[string]interface{}{
-		"model": "gpt-4.1-mini", // you can change to gpt-4.1 or gpt-4o
+		"model": "gpt-4.1-mini", 
 		"messages": []map[string]string{
 			{"role": "system", "content": "You are an expert AI task planner."},
 			{"role": "user", "content": prompt},

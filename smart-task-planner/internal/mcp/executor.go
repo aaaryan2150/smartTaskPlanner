@@ -6,7 +6,6 @@ import (
 	"smart-task-planner/internal/modules/plan/models"
 )
 
-// RunTool executes an MCP tool by name
 func RunTool(tool string, params map[string]interface{}, repo *repository.PlanRepository) (interface{}, error) {
 	switch tool {
 	case "create_task_plan":
@@ -37,7 +36,6 @@ func RunTool(tool string, params map[string]interface{}, repo *repository.PlanRe
 		}
 		return GetTaskDetails(taskID, repo)
 
-	// ⚡ Add Phase 3 & 4 tools here
 	case "interpret_user_message":
 		return interpret_user_message(params)
 	case "reschedule_plan":
