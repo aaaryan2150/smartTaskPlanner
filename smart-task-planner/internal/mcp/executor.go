@@ -10,7 +10,7 @@ import (
 func RunTool(tool string, params map[string]interface{}, repo *repository.PlanRepository) (interface{}, error) {
 	switch tool {
 	case "create_task_plan":
-		return CreateTaskPlan(params)
+		return CreateTaskPlan(params, repo)
 	case "get_goal_data":
 		userID, ok := params["user_id"].(string)
 		if !ok || userID == "" {
@@ -36,8 +36,26 @@ func RunTool(tool string, params map[string]interface{}, repo *repository.PlanRe
 			return nil, fmt.Errorf("task_id required")
 		}
 		return GetTaskDetails(taskID, repo)
+
+	// ⚡ Add Phase 3 & 4 tools here
+	case "interpret_user_message":
+		return interpret_user_message(params)
+	case "reschedule_plan":
+		return reschedule_plan(params, repo)
+	case "analyze_risks":
+		return analyze_risks(params, repo)
+	case "get_user_progress":
+		return get_user_progress(params, repo)
+	case "provide_feedback":
+		return provide_feedback(params)
+	case "generate_alternative_plans":
+		return generate_alternative_plans(params)
+	case "handle_general_query":
+    	return handle_general_query(params, repo)
+
 	default:
 		return nil, fmt.Errorf("unknown MCP tool: %s", tool)
 	}
 }
+
 
