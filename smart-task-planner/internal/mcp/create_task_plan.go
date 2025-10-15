@@ -52,7 +52,7 @@ func CreateTaskPlan(params map[string]interface{}, repo *repository.PlanReposito
 			riskyDates[r.Deadline] = true
 		}
 	}
-
+	
 	// 3️⃣ Build AI prompt
 	prompt := fmt.Sprintf(`You are an expert AI task planner.
 Generate at least 10 actionable, detailed tasks for this goal:
@@ -73,7 +73,7 @@ Return ONLY valid JSON:
 	if err != nil {
 		return TaskPlan{}, err
 	}
-
+	fmt.Println("AI Response:", aiResp)
 	// 5️⃣ Parse AI response
 	raw := strings.TrimSpace(aiResp)
 	raw = strings.TrimPrefix(raw, "```json")

@@ -35,17 +35,18 @@ func AskOpenAIForBestGoal(message string, goals []string) (string, error) {
 	}
 
 	ctx := context.Background()
-	prompt := fmt.Sprintf(`
-You are a smart goal-matching assistant for a task planner.
-The user message is: "%s"
+prompt := fmt.Sprintf(`
+You are a goal-matching assistant for a task planning app.
+
+User message: "%s"
 
 Here are the available goals:
 %s
 
-Your job:
-- Identify which of these goals the user is referring to.
-- Respond with ONLY the goal text, exactly as listed above.
-- If no good match exists, respond with "NONE".
+Rules:
+- Choose exactly ONE goal from the list that best matches the user's message.
+- Respond with the goal **exactly as written above**, no extra text.
+- If none of the goals are relevant, reply with "NONE" (in uppercase, by itself).
 `, message, strings.Join(goals, "\n"))
 
 	resp, err := getClient().CreateChatCompletion(ctx, openai.ChatCompletionRequest{

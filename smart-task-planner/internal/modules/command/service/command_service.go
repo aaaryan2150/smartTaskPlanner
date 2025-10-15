@@ -16,7 +16,6 @@ func NewCommandService(repo *repository.PlanRepository) *CommandService {
 
 // HandleCommand interprets natural language and triggers MCP tools with smart chaining
 func (s *CommandService) HandleCommand(userID, message string) (map[string]interface{}, error) {
-	// Step 1: Interpret the user message
 	intent, err := mcp.RunTool("interpret_user_message", map[string]interface{}{
 		"user_id": userID,
 		"message": message,

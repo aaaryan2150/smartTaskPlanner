@@ -262,7 +262,6 @@ func provide_feedback(params map[string]interface{}) (map[string]interface{}, er
 	completedTasks, _ := progress["completed_tasks"].(int)
 	remainingTasks := totalTasks - completedTasks
 
-	// Generate personalized feedback based on progress
 	var message, suggestion, tone string
 
 	if pct == 0 {

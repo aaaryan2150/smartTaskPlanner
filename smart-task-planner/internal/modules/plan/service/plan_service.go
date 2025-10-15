@@ -2,10 +2,10 @@ package service
 
 import (
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"smart-task-planner/internal/mcp"
 	"smart-task-planner/internal/modules/plan/models"
 	"smart-task-planner/internal/modules/plan/repository"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type PlanService struct {
@@ -17,9 +17,13 @@ func NewPlanService(repo *repository.PlanRepository) *PlanService {
 }
 
 // GenerateDraftPlan calls MCP to create an AI-generated draft plan without saving to DB
-func (s *PlanService) GenerateDraftPlan(goal string) ([]models.Task, error) {
+func (s *PlanService) GenerateDraftPlan(userID string, goal string) ([]models.Task, error) {
 	// Pass the repository if your MCP tool needs it (optional for create_task_plan)
-	result, err := mcp.RunTool("create_task_plan", map[string]interface{}{"goal": goal}, s.Repo)
+	result, err := mcp.RunTool("create_task_plan", map[string]interface{}{
+		"user_id": userID,
+		"goal":    goal,
+	}, s.Repo)
+	fmt.Println("MCP Tool Result:", result)
 	if err != nil {
 		// fallback tasks
 		return []models.Task{
@@ -28,7 +32,7 @@ func (s *PlanService) GenerateDraftPlan(goal string) ([]models.Task, error) {
 			{Title: "Execute tasks", Description: "Start working on subtasks", Status: "Pending"},
 		}, nil
 	}
-
+	fmt.Println("MCP Tool Result after error check:", result)
 	plan, ok := result.(mcp.TaskPlan)
 	if !ok {
 		return nil, fmt.Errorf("invalid data returned from MCP")
@@ -39,23 +43,23 @@ func (s *PlanService) GenerateDraftPlan(goal string) ([]models.Task, error) {
 
 // ConfirmPlan saves the confirmed plan to the DB
 func (s *PlanService) ConfirmPlan(userID string, goal string, tasks []models.Task) (*models.Plan, error) {
-    // Assign new ObjectID to each task
-    for i := range tasks {
-        if tasks[i].ID.IsZero() {
-            tasks[i].ID = primitive.NewObjectID()
-        }
-    }
+	// Assign new ObjectID to each task
+	for i := range tasks {
+		if tasks[i].ID.IsZero() {
+			tasks[i].ID = primitive.NewObjectID()
+		}
+	}
 
-    plan := &models.Plan{
-        UserID: userID,
-        Goal:   goal,
-        Tasks:  tasks,
-    }
+	plan := &models.Plan{
+		UserID: userID,
+		Goal:   goal,
+		Tasks:  tasks,
+	}
 
-    if err := s.Repo.Create(plan); err != nil {
-        return nil, err
-    }
-    return plan, nil
+	if err := s.Repo.Create(plan); err != nil {
+		return nil, err
+	}
+	return plan, nil
 }
 
 // GetAllPlans fetches all plans for a user

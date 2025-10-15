@@ -19,23 +19,26 @@ func NewPlanHandler(svc *service.PlanService) *PlanHandler {
 
 // GenerateDraftPlan generates an AI-based draft plan without saving to DB
 func (h *PlanHandler) GenerateDraftPlan(c *gin.Context) {
-	var req dto.CreatePlanRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+    var req dto.CreatePlanRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
 
-	tasks, err := h.service.GenerateDraftPlan(req.Goal)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate draft plan"})
-		return
-	}
+    userID := c.GetString("user_id") 
 
-	c.JSON(http.StatusOK, gin.H{
-		"goal":  req.Goal,
-		"tasks": tasks,
-	})
+    tasks, err := h.service.GenerateDraftPlan(userID, req.Goal)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate draft plan"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "goal":  req.Goal,
+        "tasks": tasks,
+    })
 }
+
 
 // ConfirmPlanRequest is used when user confirms the draft plan
 type ConfirmPlanRequest struct {
