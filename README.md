@@ -49,9 +49,10 @@ Create a new user account with email and password.
 **Response:**
 ```json
 {
-  "token": "jwt-token-here",
+  "email": "john@example.com",
+  "id": "nckwencoi39483984922jjenke",
   "name": "John Doe",
-  "email": "john@example.com"
+  "token": "jwt-token-here"
 }
 ```
 
@@ -72,9 +73,10 @@ Authenticate user and receive JWT token.
 **Response:**
 ```json
 {
-  "token": "jwt-token-here",
+  "email": "john@example.com",
+  "id": "nckwencoi39483984922jjenke",
   "name": "John Doe",
-  "email": "john@example.com"
+  "token": "jwt-token-here"
 }
 ```
 
@@ -180,10 +182,7 @@ Break down a complex task into detailed subtasks using AI.
 **Request Body:**
 ```json
 {
-  "task": {
-    "title": "Build a neural network",
-    "description": "Create and train a basic neural network"
-  }
+  "task_id": "383u83494iuhdcjnc9d209e02"
 }
 ```
 
@@ -260,6 +259,7 @@ Add AI-generated or manual subtasks to an existing task.
 ```json
 {
   "task_id": "507f1f77bcf86cd799439011",
+  "plan_id" : "494023042i3nrejfnkjdsmckm13",
   "subtasks": [
     {
       "title": "Learn variables and data types",
